@@ -1,0 +1,48 @@
+# =============================================================================
+# Terraform Destroy — Manual trigger only
+# =============================================================================
+
+name: "Terraform Destroy"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to destroy"
+        required: true
+        type: choice
+        options: [dev, uat, prod]
+      confirm:
+        description: "Type 'destroy' to confirm"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  TF_VERSION: "1.9.8"
+
+jobs:
+  destroy:
+    name: "Destroy ${{ github.event.inputs.environment }}"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'destroy'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        working-directory: environments/${{ github.event.inputs.environment }}
+        run: terraform init
+
+      - name: Destroy
+        working-directory: environments/${{ github.event.inputs.environment }}
+        run: terraform destroy -auto-approve -input=false

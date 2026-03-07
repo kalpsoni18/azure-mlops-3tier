@@ -1,0 +1,104 @@
+# =============================================================================
+# Prometheus Alert Rules — mirrors the PrometheusRule in modules/monitoring
+# These fire into Alertmanager → email / Slack
+# =============================================================================
+
+groups:
+
+  - name: infrastructure
+    rules:
+
+      # High CPU
+      - alert: HighCPU
+        expr: 100 - (avg by(instance)(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 85%) — sustained 10 minutes."
+          runbook: "https://github.com/YOUR_USERNAME/azure-3tier-mlops/wiki/Runbook-HighCPU"
+
+      # High Memory
+      - alert: HighMemory
+        expr: (1 - node_memory_MemAvailable_bytes/node_memory_MemTotal_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 85%)."
+
+      # Disk pressure
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes) * 100 < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Filesystem {{ $labels.mountpoint }} has only {{ $value | humanize }}% free."
+
+      # Node exporter down
+      - alert: NodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Exporter is down"
+          description: "Cannot scrape host metrics — check node-exporter container."
+
+  - name: containers
+    rules:
+
+      # Container CPU spike
+      - alert: ContainerHighCPU
+        expr: (rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high CPU"
+          description: "CPU at {{ $value | humanize }}%."
+
+      # Container memory near limit
+      - alert: ContainerMemoryHigh
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} memory high"
+          description: "Using {{ $value | humanize }}% of memory limit."
+
+      # Container restarting
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen{name!=""}[15m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} may be restarting"
+
+  - name: monitoring-stack
+    rules:
+
+      # Prometheus TSDB issues
+      - alert: PrometheusStorageHigh
+        expr: (prometheus_tsdb_storage_blocks_bytes / (10 * 1024 * 1024 * 1024)) > 0.8
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus storage exceeding 8GB"
+          description: "Consider reducing retention or increasing storage."
+
+      # Loki ingestion rate too high
+      - alert: LokiIngestionRateHigh
+        expr: rate(loki_ingester_streams_created_total[5m]) > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Loki ingestion rate is very high"

@@ -1,0 +1,99 @@
+# =============================================================================
+# Terraform CD — Apply on merge to main
+# Environment promotion: dev → uat → prod (manual approval for prod)
+# =============================================================================
+
+name: "Terraform CD"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'environments/**'
+      - 'modules/**'
+
+permissions:
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  TF_VERSION: "1.9.8"
+
+jobs:
+  # ---- Deploy DEV (automatic) ----
+  deploy-dev:
+    name: "Deploy DEV"
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        working-directory: environments/dev
+        run: terraform init
+
+      - name: Apply
+        working-directory: environments/dev
+        run: terraform apply -auto-approve -input=false
+
+      - name: Outputs
+        working-directory: environments/dev
+        run: terraform output -json > ../../dev-outputs.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev-outputs
+          path: dev-outputs.json
+
+  # ---- Deploy UAT (after dev succeeds) ----
+  deploy-uat:
+    name: "Deploy UAT"
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    environment: uat
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        working-directory: environments/uat
+        run: terraform init
+
+      - name: Apply
+        working-directory: environments/uat
+        run: terraform apply -auto-approve -input=false
+
+  # ---- Deploy PROD (manual approval required) ----
+  deploy-prod:
+    name: "Deploy PROD"
+    runs-on: ubuntu-latest
+    needs: deploy-uat
+    environment: production    # Requires manual approval in GitHub settings
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        working-directory: environments/prod
+        run: terraform init
+
+      - name: Plan (review before apply)
+        working-directory: environments/prod
+        run: terraform plan -input=false
+
+      - name: Apply
+        working-directory: environments/prod
+        run: terraform apply -auto-approve -input=false

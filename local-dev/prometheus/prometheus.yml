@@ -1,0 +1,64 @@
+# =============================================================================
+# Prometheus Configuration — Local Dev
+# Mirrors the scrape targets from kube-prometheus-stack in AKS
+# =============================================================================
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  scrape_timeout:      10s
+  external_labels:
+    environment: "local-dev"
+    project:     "azure-mlops-3tier"
+
+# Load alert rules
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+
+# Alertmanager endpoint
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Grafana
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+
+  # Alertmanager
+  - job_name: "alertmanager"
+    static_configs:
+      - targets: ["alertmanager:9093"]
+
+  # Node Exporter — host metrics
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "local-host"
+
+  # cAdvisor — container metrics
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    metric_relabel_configs:
+      # Drop high-cardinality cAdvisor metrics not needed locally
+      - source_labels: [__name__]
+        regex: "container_(tasks_state|memory_failures_total)"
+        action: drop
+
+  # Loki
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]

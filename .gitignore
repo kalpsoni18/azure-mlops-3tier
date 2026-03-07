@@ -1,0 +1,15 @@
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+crash.log
+*.auto.tfvars
+*secret*
+.env
+.sp-credentials.json
+*.pem
+*.key
+.DS_Store
+.idea/
+.vscode/
