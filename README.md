@@ -21,33 +21,8 @@
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    GitHub Actions                        │
-│         CI (PR) → Dev → UAT → Prod (approval)           │
-└─────────────────────┬───────────────────────────────────┘
-                      │ Terraform
-┌─────────────────────▼───────────────────────────────────┐
-│                  Azure (westus2 / eastus)                │
-│                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐  │
-│  │   AKS    │  │   ACR    │  │PostgreSQL│  │  Key   │  │
-│  │ 1-4 nodes│  │          │  │Flex Srv  │  │ Vault  │  │
-│  └────┬─────┘  └──────────┘  └──────────┘  └────────┘  │
-│       │                                                  │
-│  ┌────▼──────────────────────────────┐                  │
-│  │     Monitoring Namespace (Helm)    │                  │
-│  │  Prometheus · Grafana · Loki       │                  │
-│  │  Promtail · Alertmanager           │                  │
-│  └───────────────────────────────────┘                  │
-│                                                          │
-│  ┌──────────────────────────────────┐                   │
-│  │  Networking                       │                   │
-│  │  VNet · 4 Subnets · NSGs          │                   │
-│  │  Private DNS · Service Endpoints  │                   │
-│  └──────────────────────────────────┘                   │
-└─────────────────────────────────────────────────────────┘
-```
+<img width="1213" height="972" alt="Copy of azure-architecture" src="https://github.com/user-attachments/assets/24483db2-4466-47ee-851e-26261218060f" />
+
 
 ---
 
