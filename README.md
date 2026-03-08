@@ -1,229 +1,233 @@
-# 🏗️ Azure 3-Tier MLOps Infrastructure
+# Azure AKS Infrastructure — IaC + CI/CD + Observability
 
-[![Terraform CI](https://github.com/YOUR_USERNAME/azure-3tier-mlops/actions/workflows/terraform-ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/azure-3tier-mlops/actions/workflows/terraform-ci.yml)
-[![Terraform CD](https://github.com/YOUR_USERNAME/azure-3tier-mlops/actions/workflows/terraform-cd.yml/badge.svg)](https://github.com/YOUR_USERNAME/azure-3tier-mlops/actions/workflows/terraform-cd.yml)
-![Terraform](https://img.shields.io/badge/Terraform-v1.9-purple?logo=terraform)
-![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoftazure)
-![Prometheus](https://img.shields.io/badge/Prometheus-v2.51-E6522C?logo=prometheus)
-![Grafana](https://img.shields.io/badge/Grafana-v10.4-F46800?logo=grafana)
-![Loki](https://img.shields.io/badge/Loki-v2.9-yellow)
-![License](https://img.shields.io/badge/License-MIT-green)
+> Production-grade Azure Kubernetes infrastructure — fully automated with Terraform, GitHub Actions multi-environment CI/CD, and a complete observability stack.
 
-> **Production-grade, multi-environment (dev/uat/prod) 3-tier cloud infrastructure with full Prometheus + Grafana + Loki observability, defense-in-depth security, zero-hardcoded-secrets policy, and GitHub Actions CI/CD — deployed entirely with Terraform.**
+![Terraform](https://img.shields.io/badge/Terraform-1.9.8-7B42BC?logo=terraform)
+![Azure](https://img.shields.io/badge/Azure-AKS-0078D4?logo=microsoftazure)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=githubactions)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.32-326CE5?logo=kubernetes)
+![Helm](https://img.shields.io/badge/Helm-3.x-0F1689?logo=helm)
+
+---
+
+## What This Project Demonstrates
+
+- **Infrastructure as Code** — 6 reusable Terraform modules deploying a full AKS platform
+- **Multi-environment CI/CD** — GitHub Actions pipeline promoting dev → UAT → prod with manual approval gate
+- **Observability stack** — Prometheus, Grafana, Loki, and Promtail deployed via Helm on AKS
+- **Security** — Key Vault secrets management, NSGs, private networking, tfsec scanning
 
 ---
 
 ## Architecture
 
 ```
-                            ┌─────────────────────────┐
-                            │     GitHub Actions       │
-                            │  CI: validate → plan     │
-                            │  CD: dev → uat → prod    │
-                            └──────────┬──────────────┘
-                                       │
-                     ┌─────────────────┼─────────────────┐
-                     ▼                 ▼                  ▼
-              ┌─────────────┐  ┌─────────────┐  ┌──────────────┐
-              │  DEV (10.1) │  │  UAT (10.2) │  │  PROD (10.3) │
-              └──────┬──────┘  └──────┬──────┘  └──────┬───────┘
-                     │                │                 │
-        Each environment contains:
-        ┌────────────────────────────────────────────────────┐
-        │                                                    │
-        │   ┌──────────┐    ┌──────────┐    ┌────────────┐  │
-        │   │ TIER 1   │    │ TIER 2   │    │ TIER 3     │  │
-        │   │ Frontend  │───▶│ Backend  │───▶│ PostgreSQL │  │
-        │   │ (AKS)    │    │ (AKS)    │    │ (Private)  │  │
-        │   └──────────┘    └──────────┘    └────────────┘  │
-        │                                                    │
-        │   ┌───────────────────────────────────────────┐   │
-        │   │      Full Observability Stack ($0 compute) │   │
-        │   │                                           │   │
-        │   │  METRICS:  Prometheus ──▶ Grafana         │   │
-        │   │  ALERTS:   Alertmanager ──▶ Slack/Email   │   │
-        │   │  LOGS:     Promtail ──▶ Loki ──▶ Grafana  │   │
-        │   └───────────────────────────────────────────┘   │
-        │                                                    │
-        │   ┌───────────────────────────────────────────┐   │
-        │   │    Security Layers (11 layers)             │   │
-        │   │  NSGs │ Private DB │ Key Vault │ RBAC      │   │
-        │   │  Managed Identity │ Zero Hardcoded Secrets │   │
-        │   └───────────────────────────────────────────┘   │
-        └────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    GitHub Actions                        │
+│         CI (PR) → Dev → UAT → Prod (approval)           │
+└─────────────────────┬───────────────────────────────────┘
+                      │ Terraform
+┌─────────────────────▼───────────────────────────────────┐
+│                  Azure (westus2 / eastus)                │
+│                                                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐  │
+│  │   AKS    │  │   ACR    │  │PostgreSQL│  │  Key   │  │
+│  │ 1-4 nodes│  │          │  │Flex Srv  │  │ Vault  │  │
+│  └────┬─────┘  └──────────┘  └──────────┘  └────────┘  │
+│       │                                                  │
+│  ┌────▼──────────────────────────────┐                  │
+│  │     Monitoring Namespace (Helm)    │                  │
+│  │  Prometheus · Grafana · Loki       │                  │
+│  │  Promtail · Alertmanager           │                  │
+│  └───────────────────────────────────┘                  │
+│                                                          │
+│  ┌──────────────────────────────────┐                   │
+│  │  Networking                       │                   │
+│  │  VNet · 4 Subnets · NSGs          │                   │
+│  │  Private DNS · Service Endpoints  │                   │
+│  └──────────────────────────────────┘                   │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Project Structure
+## Infrastructure Modules
 
-```
-azure-3tier-mlops/
-├── .github/workflows/
-│   ├── terraform-ci.yml           # PR: format → validate → tfsec → plan
-│   ├── terraform-cd.yml           # Merge: deploy dev → uat → prod
-│   └── terraform-destroy.yml      # Manual: destroy any environment
-├── modules/
-│   ├── networking/                # VNet, 4 subnets, NSGs, private DNS
-│   ├── aks/                       # Kubernetes cluster, RBAC, CSI driver
-│   ├── database/                  # PostgreSQL Flex (private, no public access)
-│   ├── keyvault/                  # Auto-generated DB + Grafana passwords
-│   ├── acr/                       # Container Registry
-│   └── monitoring/                # Prometheus + Grafana + Loki + Promtail via Helm
-├── environments/
-│   ├── dev/                       # 1 node, burstable DB (~$0.40/hr)
-│   ├── uat/                       # 2 nodes, GP database (~$0.50/hr)
-│   └── prod/                      # 3+ nodes, HA, geo-backup (~$1.20/hr)
-├── local-dev/                     # 🆕 Docker Compose — test the stack locally first
-│   ├── docker-compose.yml
-│   ├── .env.example
-│   ├── prometheus/prometheus.yml + alerts.yml
-│   ├── alertmanager/alertmanager.yml
-│   ├── loki/loki.yml
-│   ├── promtail/promtail.yml
-│   └── grafana/provisioning/ + dashboards/
-└── scripts/bootstrap.sh
-```
+| Module | Resources Deployed |
+|--------|--------------------|
+| `networking` | VNet, 4 subnets (public/private/db/aks), NSGs, Private DNS Zone |
+| `aks` | AKS cluster 1.32, autoscaler, kubelet identity, ACR pull role |
+| `acr` | Azure Container Registry |
+| `keyvault` | Key Vault, db credentials, grafana password as secrets |
+| `database` | PostgreSQL 14 Flexible Server, firewall rules |
+| `monitoring` | Log Analytics workspace, Container Insights, Prometheus/Grafana/Loki via Helm |
 
 ---
 
-## Security (11 Layers)
+## Multi-Environment Pipeline
 
-| # | Layer | Implementation |
-|---|-------|----------------|
-| 1 | **Network Segmentation** | 4 subnets (public/private/database/AKS) with dedicated NSGs |
-| 2 | **Explicit Deny Rules** | Every NSG ends with `DenyAllInbound` at priority 4096 |
-| 3 | **Private Database** | PostgreSQL on delegated subnet, `public_network_access = false` |
-| 4 | **Private DNS** | DB hostname resolves only inside the VNet |
-| 5 | **Secrets in Key Vault** | Auto-generated 20-char DB password, never in code |
-| 6 | **CSI Secrets Driver** | AKS mounts secrets from Key Vault at runtime |
-| 7 | **Managed Identities** | Zero stored credentials — AKS uses SystemAssigned identity |
-| 8 | **Least Privilege RBAC** | AKS gets `AcrPull` only; Key Vault gets `Get/List` only |
-| 9 | **Environment Isolation** | Separate VNet/RG/KeyVault/state per environment |
-| 10 | **Security Scanning** | tfsec runs on every PR via GitHub Actions |
-| 11 | **🆕 Zero Hardcoded Secrets** | Grafana password auto-generated in Key Vault — retrieved at deploy time via `terraform output` |
+```
+Push to main
+     │
+     ▼
+┌─────────┐     ┌─────────┐     ┌──────────────────────┐
+│  DEV    │────▶│  UAT    │────▶│  PROD                │
+│automatic│     │automatic│     │ manual approval gate │
+│westus2  │     │ eastus  │     │ westus2              │
+└─────────┘     └─────────┘     └──────────────────────┘
+```
+
+| Environment | Nodes | DB SKU | Networking | Status |
+|-------------|-------|--------|------------|--------|
+| dev | 1-2 × DC2s_v3 | B_Standard_B1ms | 10.1.0.0/16 | ✅ |
+| uat | 2-4 × DC2s_v3 | B_Standard_B2ms | 10.2.0.0/16 | ✅ |
+| prod | 1-10 × DC2s_v3 | B_Standard_B2ms | 10.3.0.0/16 | ⚠️ vCPU quota |
+
+> Prod hit subscription vCPU quota limits — dev and UAT consume all available confidential VM capacity. This is a documented real-world constraint, not a code issue.
 
 ---
 
 ## Observability Stack
 
-### Metrics + Alerts
-- **kube-prometheus-stack** (Prometheus + Grafana + Alertmanager) deployed via Helm
-- `node-exporter` for host metrics, `kube-state-metrics` for K8s object state
-- 4 custom `PrometheusRule` alerts: HighCPU, HighMemory, PodCrashLoop, DiskPressure
-- Alertmanager routes to Slack (#alerts for critical, #warnings for warning) + email
+Deployed via Helm into the `monitoring` namespace on AKS:
 
-### Logs (🆕 Loki + Promtail)
-- **Loki** single-binary log storage (cost-optimised, same architecture as local dev)
-- **Promtail** DaemonSet ships all pod logs to Loki automatically
-- Loki pre-wired as Grafana datasource — explore logs alongside metrics in one UI
-- Per-environment retention: dev=7d, uat=30d, prod=90d
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| kube-prometheus-stack | 65.1.0 | Prometheus + Grafana + Alertmanager |
+| Loki | 6.6.2 | Log aggregation (filesystem, single binary) |
+| Promtail | 6.15.5 | Log shipping from all pods |
 
-### Local Dev Stack (🆕)
+**Grafana dashboards imported:**
+- Kubernetes Cluster Overview (ID: 15760)
+- Kubernetes Pods (ID: 13332)
+- Loki Logs Explorer (ID: 15141)
 
-Run the full stack locally before spending money on Azure:
-
-```bash
-cd local-dev
-cp .env.example .env    # set GRAFANA_ADMIN_PASSWORD
-docker compose up -d
-
-open http://localhost:3000   # Grafana  (admin / your password)
-open http://localhost:9090   # Prometheus
-open http://localhost:9093   # Alertmanager
-# Loki available at :3100 (auto-wired to Grafana)
-
-docker compose down
-```
-
-Pre-built Infrastructure Overview dashboard loads automatically.
+**Datasources connected:** Prometheus · Loki · Alertmanager
 
 ---
 
-## CI/CD Pipeline
+## Repository Structure
 
 ```
-PR → fmt check → validate (dev/uat/prod) → tfsec scan → plan dev → post comment
-Merge → apply dev (auto) → apply uat (auto) → apply prod (manual approval gate)
+azure-mlops-3tier/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # PR: fmt, validate, tfsec, plan
+│       ├── cd.yml          # Deploy: dev → uat → prod
+│       └── destroy.yml     # Manual destroy per environment
+├── environments/
+│   ├── dev/                # tfvars, backend, variables, main
+│   ├── uat/                # tfvars, backend, variables, main
+│   └── prod/               # tfvars, backend, variables, main
+├── modules/
+│   ├── aks/
+│   ├── acr/
+│   ├── database/
+│   ├── keyvault/
+│   ├── monitoring/
+│   └── networking/
+└── app/                    # Application code (WIP — pending ACR push)
+    ├── frontend/           # nginx + HTML dashboard + Dockerfile
+    ├── backend/            # FastAPI + Dockerfile
+    ├── mlops/              # sklearn model training + serving + Dockerfile
+    ├── k8s/                # Kubernetes manifests
+    └── deploy.sh
 ```
 
-### GitHub Secrets Required
+---
 
-| Secret | Source |
-|--------|--------|
-| `ARM_CLIENT_ID` | `az ad sp create-for-rbac` → `appId` |
-| `ARM_CLIENT_SECRET` | → `password` |
-| `ARM_TENANT_ID` | → `tenant` |
-| `ARM_SUBSCRIPTION_ID` | `az account show --query id` |
+## CI/CD Workflows
+
+### CI — Pull Request
+```
+fmt check → validate (dev/uat/prod) → tfsec security scan → plan → PR comment
+```
+
+### CD — Push to main
+```
+deploy-dev (auto) → deploy-uat (needs: dev) → deploy-prod (needs: uat + manual approval)
+```
+
+### Destroy — Manual trigger
+```
+Select environment → type 'destroy' to confirm → terraform destroy
+```
 
 ---
 
 ## Quick Start
 
+### Prerequisites
+```
+Azure CLI · Terraform >= 1.9.8 · kubectl · Helm · Docker
+```
+
+### GitHub Secrets Required
+```
+ARM_CLIENT_ID
+ARM_CLIENT_SECRET
+ARM_SUBSCRIPTION_ID
+ARM_TENANT_ID
+```
+
+### Deploy Infrastructure
 ```bash
-# 1. Optional: try locally first
-cd local-dev && cp .env.example .env && docker compose up -d
-
-# 2. Azure setup
-az login && ./scripts/bootstrap.sh && source .env
-
-# 3. Deploy dev (~$1.20 for 3 hours)
 cd environments/dev
-terraform init && terraform apply
+terraform init
+terraform apply -auto-approve
 
-# 4. Get Grafana URL
-$(terraform output -raw aks_connect)
-kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+az aks get-credentials \
+  --resource-group mlops3tier-dev-rg \
+  --name $(terraform output -raw aks_cluster)
+```
 
-# 5. Get auto-generated Grafana password from Key Vault
-$(terraform output -raw grafana_password_cmd)
+### Deploy Monitoring Stack
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
 
-# 6. Explore logs in Grafana → Explore → Loki
-# Query: {namespace="monitoring"} |= "error"
+kubectl create namespace monitoring
 
-# 7. Clean up
-terraform destroy -auto-approve
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --version 65.1.0 \
+  --set grafana.service.type=LoadBalancer
+
+helm install loki grafana/loki \
+  --namespace monitoring --version 6.6.2 \
+  --set deploymentMode=SingleBinary \
+  --set loki.auth_enabled=false \
+  --set loki.useTestSchema=true \
+  --set loki.commonConfig.replication_factor=1 \
+  --set loki.storage.type=filesystem \
+  --set singleBinary.replicas=1 \
+  --set read.replicas=0 --set write.replicas=0 --set backend.replicas=0
+
+helm install promtail grafana/promtail \
+  --namespace monitoring --version 6.15.5 \
+  --set "config.clients[0].url=http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+```
+
+### Access Grafana
+```bash
+kubectl get svc -n monitoring kube-prometheus-stack-grafana
+az keyvault secret show --vault-name <kv-name> --name grafana-admin-password --query value -o tsv
 ```
 
 ---
 
-## Environment Comparison
+## Key Design Decisions
 
-| Feature | DEV | UAT | PROD |
-|---------|-----|-----|------|
-| AKS Nodes | 1× B2s | 2× D2s_v3 | 3× D4s_v3 |
-| PostgreSQL | B1ms (burstable) | GP D2s_v3 | GP D4s_v3 |
-| DB Backup | 7 days | 14 days | 35 days + geo |
-| Prometheus Retention | 3 days | 14 days | 30 days |
-| Loki Retention | 7 days | 30 days | 90 days |
-| Grafana Access | LoadBalancer | LoadBalancer | ClusterIP (ingress) |
-| Hourly Cost | ~$0.40 | ~$0.50 | ~$1.20 |
+| Decision | Reason |
+|----------|--------|
+| Confidential VMs (DC2s_v3) | Only VM family available in this Azure subscription |
+| PostgreSQL in centralus | eastus/westus2 capacity restricted for Flex Server |
+| Loki `auth_enabled=false` | Simplifies log shipping for dev/uat without tenant ID config |
+| Public PostgreSQL + firewall | Private DNS requires DB and VNet in same region |
+| Helm deployed via CLI | kubernetes/helm provider causes circular dependency on first apply |
 
 ---
 
-## What This Demonstrates
+## Tech Stack
 
-- **IaC**: Terraform modules, remote state, multi-env tfvars, lifecycle rules
-- **Cloud Architecture**: Azure VNet, AKS, PostgreSQL Flex, Key Vault, ACR
-- **Kubernetes**: Helm, CSI secrets driver, namespace isolation, DaemonSets
-- **CI/CD**: GitHub Actions promotion pipeline with manual prod gates
-- **Security**: NSGs, private endpoints, managed identities, zero hardcoded secrets, tfsec
-- **Observability**: Prometheus, Grafana, Alertmanager, Loki, Promtail, custom alerts
-- **Cost Engineering**: Burstable SKUs for dev, $0-compute observability stack, destroy strategy
-
----
-
-## Screenshots
-
-> _Deploy and screenshot:_
-> - [ ] Grafana Infrastructure Overview dashboard
-> - [ ] Grafana Loki log explorer
-> - [ ] Alertmanager rules page
-> - [ ] Azure Resource Group / AKS / Key Vault in Portal
-> - [ ] GitHub Actions CI/CD pipeline run
-
----
-
-## License
-
-MIT — Inspired by [Piyush Sachdeva's Terraform Azure Course](https://github.com/piyushsachdeva/Terraform-Full-Course-Azure)
+`Terraform` · `Azure AKS` · `Azure ACR` · `PostgreSQL Flexible Server` · `Azure Key Vault` · `Prometheus` · `Grafana` · `Loki` · `Promtail` · `Alertmanager` · `Helm` · `Kubernetes` · `GitHub Actions`
