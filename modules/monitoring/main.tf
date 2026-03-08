@@ -237,6 +237,10 @@ resource "helm_release" "loki" {
     value = "filesystem"
   }
   set {
+    name  = "loki.useTestSchema"
+    value = "true"
+  }
+  set {
     name  = "loki.limits_config.retention_period"
     value = var.loki_retention
   }
