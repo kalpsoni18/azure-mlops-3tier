@@ -5,10 +5,20 @@ variable "location" {
   type = string
 }
 variable "environment" {
-  type = string
+  type    = string
+  default = ""
+}
+variable "prefix" {
+  type    = string
+  default = ""
+}
+variable "tags" {
+  type    = map(string)
+  default = {}
 }
 variable "cluster_name" {
-  type = string
+  type    = string
+  default = ""
 }
 variable "log_retention_days" {
   type    = number
