@@ -11,3 +11,13 @@ variable "sku" {
   type    = string
   default = "Basic"
 }
+
+variable "suffix" {
+  type    = string
+  default = ""
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
