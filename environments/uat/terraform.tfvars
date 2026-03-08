@@ -14,7 +14,7 @@ database_subnet_prefix = "10.2.3.0/24"
 aks_subnet_prefix      = "10.2.4.0/22"
 
 # AKS — 2 nodes
-aks_node_vm_size = "Standard_D2s_v3"
+aks_node_vm_size = "Standard_DC2s_v3"
 aks_node_min     = 2
 aks_node_max     = 4
 
@@ -22,7 +22,7 @@ aks_node_max     = 4
 acr_sku = "Standard"
 
 # Database — general purpose
-db_sku         = "GP_Standard_D2s_v3"
+db_sku         = "B_Standard_B2ms"
 db_storage_mb  = 65536
 db_backup_days = 14
 db_geo_backup  = false
