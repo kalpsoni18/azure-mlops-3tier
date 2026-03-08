@@ -5,9 +5,15 @@ variable "resource_group_id" { type = string }
 variable "environment" { type = string }
 variable "aks_subnet_id" { type = string }
 variable "tags" { type = map(string) }
-variable "kubernetes_version" { type = string; default = "1.30.0" }
-variable "node_vm_size" { type = string; default = "Standard_B2s" }
-variable "node_min_count" { type = number; default = 1 }
-variable "node_max_count" { type = number; default = 3 }
-variable "log_analytics_workspace_id" { type = string; default = "" }
-variable "acr_id" { type = string; default = "" }
+variable "kubernetes_version" { type = string
+  default = "1.30.0" }
+variable "node_vm_size" { type = string
+  default = "Standard_B2s" }
+variable "node_min_count" { type = number
+  default = 1 }
+variable "node_max_count" { type = number
+  default = 3 }
+variable "log_analytics_workspace_id" { type = string
+  default = "" }
+variable "acr_id" { type = string
+  default = "" }
