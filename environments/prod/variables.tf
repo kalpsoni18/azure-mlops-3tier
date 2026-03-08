@@ -137,3 +137,9 @@ variable "db_location" {
   type        = string
   default     = "centralus"
 }
+
+variable "db_location" {
+  description = "Location for PostgreSQL Flexible Server"
+  type        = string
+  default     = "centralus"
+}
