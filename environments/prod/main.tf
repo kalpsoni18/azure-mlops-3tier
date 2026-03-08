@@ -35,28 +35,14 @@ provider "azurerm" {
   }
 }
 
-provider "kubernetes" {
-  host                   = module.aks.host
-  client_certificate     = base64decode(jsondecode(module.aks.kube_config_raw).users[0].user["client-certificate-data"])
-  client_key             = base64decode(jsondecode(module.aks.kube_config_raw).users[0].user["client-key-data"])
-  cluster_ca_certificate = base64decode(jsondecode(module.aks.kube_config_raw).clusters[0].cluster["certificate-authority-data"])
-}
 
-provider "helm" {
-  kubernetes {
-    host                   = module.aks.host
-    client_certificate     = base64decode(jsondecode(module.aks.kube_config_raw).users[0].user["client-certificate-data"])
-    client_key             = base64decode(jsondecode(module.aks.kube_config_raw).users[0].user["client-key-data"])
-    cluster_ca_certificate = base64decode(jsondecode(module.aks.kube_config_raw).clusters[0].cluster["certificate-authority-data"])
-  }
-}
 
 data "azurerm_client_config" "current" {}
 
 resource "random_string" "suffix" {
   length  = 6
-  special = false
-  upper   = false
+  special = true
+  upper   = true
 }
 
 locals {
@@ -81,7 +67,7 @@ resource "azurerm_resource_group" "main" {
 
 resource "azurerm_log_analytics_workspace" "main" {
   name                = "${local.prefix}-law"
-  location            = var.location
+  location = var.location
   resource_group_name = azurerm_resource_group.main.name
   sku                 = "PerGB2018"
   retention_in_days   = max(30, var.log_retention_days)
@@ -97,7 +83,7 @@ module "networking" {
 
   prefix                 = local.prefix
   resource_group_name    = azurerm_resource_group.main.name
-  location               = var.location
+  location = var.location
   vnet_address_space     = var.vnet_address_space
   public_subnet_prefix   = var.public_subnet_prefix
   private_subnet_prefix  = var.private_subnet_prefix
@@ -116,7 +102,7 @@ module "acr" {
   environment         = var.environment
   suffix              = random_string.suffix.result
   resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
+  location = var.location
   sku                 = var.acr_sku
   tags                = local.tags
 }
@@ -131,7 +117,7 @@ module "aks" {
   prefix                     = local.prefix
   resource_group_name        = azurerm_resource_group.main.name
   resource_group_id          = azurerm_resource_group.main.id
-  location                   = var.location
+  location = var.location
   environment                = var.environment
   aks_subnet_id              = module.networking.aks_subnet_id
   kubernetes_version         = var.kubernetes_version
@@ -155,7 +141,7 @@ module "keyvault" {
   environment             = var.environment
   suffix                  = random_string.suffix.result
   resource_group_name     = azurerm_resource_group.main.name
-  location                = var.location
+  location = var.location
   aks_identity_id         = module.aks.cluster_identity
   aks_csi_identity_id     = module.aks.cluster_identity
   aks_kubelet_identity_id = module.aks.kubelet_identity
@@ -176,7 +162,7 @@ module "database" {
 
   prefix                = local.prefix
   resource_group_name   = azurerm_resource_group.main.name
-  location              = var.location
+  location = var.db_location
   database_subnet_id    = module.networking.database_subnet_id
   private_dns_zone_id   = module.networking.private_dns_zone_id
   admin_username        = var.db_username
