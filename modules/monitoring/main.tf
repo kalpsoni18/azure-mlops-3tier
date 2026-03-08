@@ -11,7 +11,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
-  retention_in_days   = var.log_retention_days
+  retention_in_days   = max(30, var.log_retention_days)
   tags                = var.tags
 }
 
@@ -161,6 +161,7 @@ resource "helm_release" "kube_prometheus" {
 # --- Custom MLOps Alerts ---
 
 resource "kubernetes_manifest" "custom_alerts" {
+  count = 0  # disabled until cluster exists
   count = var.enable_prometheus ? 1 : 0
 
   manifest = {
