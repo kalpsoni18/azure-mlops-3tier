@@ -1,0 +1,134 @@
+# =============================================================================
+# 3-Tier App + MLOps — Kubernetes Manifests
+# =============================================================================
+
+---
+# Backend API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: ACRSERVER/backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "dev"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+
+---
+# Frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    tier: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ACRSERVER/frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+
+---
+# MLOps Model Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-server
+  labels:
+    app: mlops-server
+    tier: ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlops-server
+  template:
+    metadata:
+      labels:
+        app: mlops-server
+    spec:
+      containers:
+      - name: mlops-server
+        image: ACRSERVER/mlops:latest
+        ports:
+        - containerPort: 8001
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlops-svc
+spec:
+  selector:
+    app: mlops-server
+  type: LoadBalancer
+  ports:
+  - port: 8001
+    targetPort: 8001

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure MLOps Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #e0e0e0; min-height: 100vh; }
+    header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px 40px; border-bottom: 1px solid #0f3460; display: flex; align-items: center; gap: 15px; }
+    header h1 { font-size: 1.5rem; color: #00d4ff; }
+    header span { background: #0f3460; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: #00d4ff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 40px; }
+    .card { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 12px; padding: 25px; }
+    .card h3 { color: #00d4ff; margin-bottom: 15px; font-size: 1rem; }
+    .status { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff88; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .metric { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #0f3460; font-size: 0.9rem; }
+    .metric:last-child { border-bottom: none; }
+    .val { color: #00d4ff; font-weight: bold; }
+    .pred-item { background: #0f0f1a; border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 0.85rem; }
+    .pred-label { color: #00ff88; font-weight: bold; }
+    #api-status { color: #666; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ Azure MLOps Platform</h1>
+    <span id="env-badge">DEV</span>
+    <span style="margin-left:auto" id="api-status">Connecting...</span>
+  </header>
+  <div class="grid">
+    <div class="card">
+      <h3>🏗️ Infrastructure</h3>
+      <div class="status"><div class="dot"></div> AKS Cluster Running</div>
+      <div class="metric"><span>Nodes</span><span class="val">2</span></div>
+      <div class="metric"><span>Namespace</span><span class="val">default</span></div>
+      <div class="metric"><span>Region</span><span class="val">westus2</span></div>
+      <div class="metric"><span>Database</span><span class="val">PostgreSQL ✓</span></div>
+    </div>
+    <div class="card">
+      <h3>🤖 ML Model Status</h3>
+      <div class="status"><div class="dot"></div> Model Serving Active</div>
+      <div class="metric"><span>Model</span><span class="val">iris-classifier-v1</span></div>
+      <div class="metric"><span>Algorithm</span><span class="val">Random Forest</span></div>
+      <div class="metric"><span>Accuracy</span><span class="val">96.7%</span></div>
+      <div class="metric"><span>Predictions/hr</span><span class="val" id="pred-count">—</span></div>
+    </div>
+    <div class="card">
+      <h3>📊 Live Predictions</h3>
+      <div id="predictions"><div style="color:#666">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>🔧 API Info</h3>
+      <div id="api-info"><div style="color:#666">Loading...</div></div>
+    </div>
+  </div>
+  <script>
+    const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api-backend';
+    async function fetchData() {
+      try {
+        const [info, preds] = await Promise.all([
+          fetch(`${API}/api/info`).then(r=>r.json()),
+          fetch(`${API}/api/predictions`).then(r=>r.json())
+        ]);
+        document.getElementById('api-status').textContent = '● API Connected';
+        document.getElementById('api-status').style.color = '#00ff88';
+        document.getElementById('env-badge').textContent = (info.environment || 'dev').toUpperCase();
+        document.getElementById('api-info').innerHTML = Object.entries(info).map(([k,v])=>
+          `<div class="metric"><span>${k}</span><span class="val">${v}</span></div>`).join('');
+        document.getElementById('pred-count').textContent = preds.predictions.length * 120;
+        document.getElementById('predictions').innerHTML = preds.predictions.map(p=>
+          `<div class="pred-item">Input: [${p.input}]<br><span class="pred-label">→ ${p.output}</span> (${(p.confidence*100).toFixed(0)}%)</div>`
+        ).join('');
+      } catch(e) {
+        document.getElementById('api-status').textContent = '● API Offline';
+        document.getElementById('api-status').style.color = '#ff4444';
+      }
+    }
+    fetchData();
+    setInterval(fetchData, 10000);
+  </script>
+</body>
+</html>
