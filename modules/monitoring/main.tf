@@ -162,7 +162,6 @@ resource "helm_release" "kube_prometheus" {
 
 resource "kubernetes_manifest" "custom_alerts" {
   count = 0  # disabled until cluster exists
-  count = var.enable_prometheus ? 1 : 0
 
   manifest = {
     apiVersion = "monitoring.coreos.com/v1"
