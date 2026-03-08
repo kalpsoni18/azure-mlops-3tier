@@ -14,8 +14,8 @@ database_subnet_prefix = "10.3.3.0/24"
 aks_subnet_prefix      = "10.3.4.0/22"
 
 # AKS — 3+ nodes, larger VMs
-aks_node_vm_size = "Standard_DC4s_v3"
-aks_node_min     = 3
+aks_node_vm_size = "Standard_DC2s_v3"
+aks_node_min     = 1
 aks_node_max     = 10
 
 # ACR — premium
