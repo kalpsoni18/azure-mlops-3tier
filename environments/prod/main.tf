@@ -6,20 +6,20 @@
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
-    azurerm    = { source = "hashicorp/azurerm"
-  version = "~> 4.0" }
-    random     = { source = "hashicorp/random"
-  version = "~> 3.5" }
-    helm       = { source = "hashicorp/helm"
-  version = "~> 2.12" }
+    azurerm = { source = "hashicorp/azurerm"
+    version = "~> 4.0" }
+    random = { source = "hashicorp/random"
+    version = "~> 3.5" }
+    helm = { source = "hashicorp/helm"
+    version = "~> 2.12" }
     kubernetes = { source = "hashicorp/kubernetes"
-  version = "~> 2.25" }
+    version = "~> 2.25" }
   }
 }
 
 provider "azurerm" {
   features {
-    key_vault      { purge_soft_delete_on_destroy = true }
+    key_vault { purge_soft_delete_on_destroy = true }
     resource_group { prevent_deletion_if_contains_resources = false }
   }
 }
@@ -99,15 +99,15 @@ module "monitoring" {
 module "networking" {
   source = "../../modules/networking"
 
-  prefix               = local.prefix
-  resource_group_name  = azurerm_resource_group.main.name
-  location             = var.location
-  vnet_address_space   = var.vnet_address_space
-  public_subnet_prefix = var.public_subnet_prefix
+  prefix                 = local.prefix
+  resource_group_name    = azurerm_resource_group.main.name
+  location               = var.location
+  vnet_address_space     = var.vnet_address_space
+  public_subnet_prefix   = var.public_subnet_prefix
   private_subnet_prefix  = var.private_subnet_prefix
   database_subnet_prefix = var.database_subnet_prefix
   aks_subnet_prefix      = var.aks_subnet_prefix
-  tags                 = local.tags
+  tags                   = local.tags
 }
 
 # =============================================================================
@@ -156,19 +156,19 @@ module "aks" {
 module "database" {
   source = "../../modules/database"
 
-  prefix               = local.prefix
-  resource_group_name  = azurerm_resource_group.main.name
-  location             = var.location
-  database_subnet_id   = module.networking.database_subnet_id
-  private_dns_zone_id  = module.networking.private_dns_zone_id
+  prefix                = local.prefix
+  resource_group_name   = azurerm_resource_group.main.name
+  location              = var.location
+  database_subnet_id    = module.networking.database_subnet_id
+  private_dns_zone_id   = module.networking.private_dns_zone_id
   admin_username        = var.db_username
   admin_password        = module.keyvault.db_password
-  db_name              = var.db_name
-  sku_name             = var.db_sku
-  storage_mb           = var.db_storage_mb
+  db_name               = var.db_name
+  sku_name              = var.db_sku
+  storage_mb            = var.db_storage_mb
   backup_retention_days = var.db_backup_days
   geo_redundant_backup  = var.db_geo_backup
-  tags                 = local.tags
+  tags                  = local.tags
 
   depends_on = [module.networking, module.keyvault]
 }

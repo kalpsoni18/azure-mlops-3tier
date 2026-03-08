@@ -32,8 +32,8 @@ log_retention_days   = 90
 enable_prometheus    = true
 prometheus_retention = "30d"
 prometheus_storage   = "50Gi"
-grafana_service_type = "ClusterIP"    # Use ingress in prod
+grafana_service_type = "ClusterIP" # Use ingress in prod
 
 # Loki log aggregation
-loki_retention = "2160h"   # 90 days for prod
+loki_retention = "2160h" # 90 days for prod
 loki_storage   = "20Gi"

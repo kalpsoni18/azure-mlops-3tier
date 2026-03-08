@@ -35,5 +35,5 @@ prometheus_storage   = "5Gi"
 grafana_service_type = "LoadBalancer"
 
 # Loki log aggregation
-loki_retention = "168h"    # 7 days for dev
+loki_retention = "168h" # 7 days for dev
 loki_storage   = "5Gi"
