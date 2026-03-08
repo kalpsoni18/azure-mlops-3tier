@@ -1,26 +1,37 @@
 # =============================================================================
-# Environment Orchestrator
-# Wires all modules together. Behavior controlled entirely by terraform.tfvars
+# Environment Orchestrator — DEV
 # =============================================================================
 
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
-    azurerm = { source = "hashicorp/azurerm"
-    version = "~> 4.0" }
-    random = { source = "hashicorp/random"
-    version = "~> 3.5" }
-    helm = { source = "hashicorp/helm"
-    version = "~> 2.12" }
-    kubernetes = { source = "hashicorp/kubernetes"
-    version = "~> 2.25" }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.12"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.25"
+    }
   }
 }
 
 provider "azurerm" {
   features {
-    key_vault { purge_soft_delete_on_destroy = true }
-    resource_group { prevent_deletion_if_contains_resources = false }
+    key_vault {
+      purge_soft_delete_on_destroy = true
+    }
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
   }
 }
 
@@ -40,8 +51,6 @@ provider "helm" {
   }
 }
 
-# --- Data & Locals ---
-
 data "azurerm_client_config" "current" {}
 
 resource "random_string" "suffix" {
@@ -60,8 +69,6 @@ locals {
   })
 }
 
-# --- Resource Group ---
-
 resource "azurerm_resource_group" "main" {
   name     = "${var.project}-${var.environment}-rg"
   location = var.location
@@ -69,31 +76,20 @@ resource "azurerm_resource_group" "main" {
 }
 
 # =============================================================================
-# 1. Monitoring (first — others need log analytics ID)
+# 1. Log Analytics (standalone — no dependencies)
 # =============================================================================
 
-module "monitoring" {
-  source = "../../modules/monitoring"
-
-  prefix               = local.prefix
-  resource_group_name  = azurerm_resource_group.main.name
-  location             = var.location
-  log_retention_days   = var.log_retention_days
-  alert_email          = var.alert_email
-  enable_prometheus    = var.enable_prometheus
-  prometheus_retention = var.prometheus_retention
-  prometheus_storage   = var.prometheus_storage
-  grafana_password     = module.keyvault.grafana_password
-  grafana_service_type = var.grafana_service_type
-  loki_retention       = var.loki_retention
-  loki_storage         = var.loki_storage
-  tags                 = local.tags
-
-  depends_on = [module.aks, module.keyvault]
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${local.prefix}-law"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = var.log_retention_days
+  tags                = local.tags
 }
 
 # =============================================================================
-# 2. Networking (VNet + subnets + NSGs + private DNS)
+# 2. Networking (no dependencies)
 # =============================================================================
 
 module "networking" {
@@ -111,7 +107,7 @@ module "networking" {
 }
 
 # =============================================================================
-# 3. ACR (Container Registry)
+# 3. ACR (no dependencies)
 # =============================================================================
 
 module "acr" {
@@ -126,7 +122,7 @@ module "acr" {
 }
 
 # =============================================================================
-# 4. AKS (Kubernetes Cluster)
+# 4. AKS (needs networking + acr + log analytics)
 # =============================================================================
 
 module "aks" {
@@ -142,7 +138,7 @@ module "aks" {
   node_vm_size               = var.aks_node_vm_size
   node_min_count             = var.aks_node_min
   node_max_count             = var.aks_node_max
-  log_analytics_workspace_id = module.monitoring.log_analytics_id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   acr_id                     = module.acr.acr_id
   tags                       = local.tags
 
@@ -150,7 +146,29 @@ module "aks" {
 }
 
 # =============================================================================
-# 5. Database (PostgreSQL Flexible Server — private, no public access)
+# 5. Key Vault (needs aks — generates its own passwords, no database dep)
+# =============================================================================
+
+module "keyvault" {
+  source = "../../modules/keyvault"
+
+  environment             = var.environment
+  suffix                  = random_string.suffix.result
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = var.location
+  aks_identity_id         = module.aks.cluster_identity
+  aks_csi_identity_id     = module.aks.cluster_identity
+  aks_kubelet_identity_id = module.aks.kubelet_identity
+  db_username             = var.db_username
+  db_name                 = var.db_name
+  db_fqdn                 = ""
+  tags                    = local.tags
+
+  depends_on = [module.aks]
+}
+
+# =============================================================================
+# 6. Database (needs networking + keyvault password)
 # =============================================================================
 
 module "database" {
@@ -174,23 +192,25 @@ module "database" {
 }
 
 # =============================================================================
-# 6. Key Vault (Secrets — wired to AKS identities)
+# 7. Monitoring Helm stack (needs aks + keyvault)
 # =============================================================================
 
-module "keyvault" {
-  source = "../../modules/keyvault"
+module "monitoring" {
+  source = "../../modules/monitoring"
 
-  environment             = var.environment
-  suffix                  = random_string.suffix.result
-  resource_group_name     = azurerm_resource_group.main.name
-  location                = var.location
-  aks_identity_id         = module.aks.identity_principal_id
-  aks_csi_identity_id     = module.aks.kv_secrets_identity_id
-  aks_kubelet_identity_id = module.aks.kubelet_identity_id
-  db_username             = var.db_username
-  db_name                 = var.db_name
-  db_fqdn                 = module.database.server_fqdn
-  tags                    = local.tags
+  prefix               = local.prefix
+  resource_group_name  = azurerm_resource_group.main.name
+  location             = var.location
+  log_retention_days   = var.log_retention_days
+  alert_email          = var.alert_email
+  enable_prometheus    = var.enable_prometheus
+  prometheus_retention = var.prometheus_retention
+  prometheus_storage   = var.prometheus_storage
+  grafana_password     = module.keyvault.grafana_password
+  grafana_service_type = var.grafana_service_type
+  loki_retention       = var.loki_retention
+  loki_storage         = var.loki_storage
+  tags                 = local.tags
 
-  depends_on = [module.aks, module.database]
+  depends_on = [module.aks, module.keyvault]
 }
