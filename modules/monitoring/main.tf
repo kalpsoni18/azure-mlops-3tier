@@ -64,54 +64,96 @@ resource "helm_release" "kube_prometheus" {
   wait       = true
 
   # Prometheus
-  set { name = "prometheus.prometheusSpec.retention"
-  value = var.prometheus_retention }
-  set { name = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage"
-  value = var.prometheus_storage }
-  set { name = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName"
-  value = "managed-premium" }
-  set { name = "prometheus.prometheusSpec.resources.requests.cpu"
-  value = "100m" }
-  set { name = "prometheus.prometheusSpec.resources.requests.memory"
-  value = "256Mi" }
-  set { name = "prometheus.prometheusSpec.resources.limits.memory"
-  value = "512Mi" }
-  set { name = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
-  value = "false" }
+  set {
+    name  = "prometheus.prometheusSpec.retention"
+    value = var.prometheus_retention
+  }
+  set {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage"
+    value = var.prometheus_storage
+  }
+  set {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName"
+    value = "managed-premium"
+  }
+  set {
+    name  = "prometheus.prometheusSpec.resources.requests.cpu"
+    value = "100m"
+  }
+  set {
+    name  = "prometheus.prometheusSpec.resources.requests.memory"
+    value = "256Mi"
+  }
+  set {
+    name  = "prometheus.prometheusSpec.resources.limits.memory"
+    value = "512Mi"
+  }
+  set {
+    name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
+    value = "false"
+  }
 
   # Grafana
-  set { name = "grafana.adminPassword"
-  value = var.grafana_password }
-  set { name = "grafana.service.type"
-  value = var.grafana_service_type }
-  set { name = "grafana.persistence.enabled"
-  value = "true" }
-  set { name = "grafana.persistence.size"
-  value = "2Gi" }
-  set { name = "grafana.persistence.storageClassName"
-  value = "managed-premium" }
-  set { name = "grafana.defaultDashboardsEnabled"
-  value = "true" }
-  set { name = "grafana.defaultDashboardsTimezone"
-  value = "America/Toronto" }
-  set { name = "grafana.resources.requests.cpu"
-  value = "50m" }
-  set { name = "grafana.resources.requests.memory"
-  value = "128Mi" }
+  set {
+    name  = "grafana.adminPassword"
+    value = var.grafana_password
+  }
+  set {
+    name  = "grafana.service.type"
+    value = var.grafana_service_type
+  }
+  set {
+    name  = "grafana.persistence.enabled"
+    value = "true"
+  }
+  set {
+    name  = "grafana.persistence.size"
+    value = "2Gi"
+  }
+  set {
+    name  = "grafana.persistence.storageClassName"
+    value = "managed-premium"
+  }
+  set {
+    name  = "grafana.defaultDashboardsEnabled"
+    value = "true"
+  }
+  set {
+    name  = "grafana.defaultDashboardsTimezone"
+    value = "America/Toronto"
+  }
+  set {
+    name  = "grafana.resources.requests.cpu"
+    value = "50m"
+  }
+  set {
+    name  = "grafana.resources.requests.memory"
+    value = "128Mi"
+  }
 
   # Alertmanager
-  set { name = "alertmanager.alertmanagerSpec.retention"
-  value = "72h" }
-  set { name = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage"
-  value = "1Gi" }
-  set { name = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName"
-  value = "managed-premium" }
+  set {
+    name  = "alertmanager.alertmanagerSpec.retention"
+    value = "72h"
+  }
+  set {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage"
+    value = "1Gi"
+  }
+  set {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName"
+    value = "managed-premium"
+  }
 
   # Components
-  set { name = "nodeExporter.enabled"
-  value = "true" }
-  set { name = "kubeStateMetrics.enabled"
-  value = "true" }
+  set {
+    name  = "nodeExporter.enabled"
+    value = "true"
+  }
+  set {
+    name  = "kubeStateMetrics.enabled"
+    value = "true"
+  }
 
   depends_on = [kubernetes_namespace.monitoring]
 }
@@ -182,33 +224,59 @@ resource "helm_release" "loki" {
   wait       = true
 
   # Single-binary mode (cost-optimised — same as local dev)
-  set { name = "deploymentMode"
-  value = "SingleBinary" }
-  set { name = "loki.commonConfig.replication_factor"
-  value = "1" }
-  set { name = "loki.storage.type"
-  value = "filesystem" }
-  set { name = "loki.limits_config.retention_period"
-  value = var.loki_retention }
-  set { name = "singleBinary.replicas"
-  value = "1" }
-  set { name = "singleBinary.persistence.storageClass"
-  value = "managed-premium" }
-  set { name = "singleBinary.persistence.size"
-  value = var.loki_storage }
-  set { name = "singleBinary.resources.requests.cpu"
-  value = "50m" }
-  set { name = "singleBinary.resources.requests.memory"
-  value = "128Mi" }
-  set { name = "singleBinary.resources.limits.memory"
-  value = "256Mi" }
+  set {
+    name  = "deploymentMode"
+    value = "SingleBinary"
+  }
+  set {
+    name  = "loki.commonConfig.replication_factor"
+    value = "1"
+  }
+  set {
+    name  = "loki.storage.type"
+    value = "filesystem"
+  }
+  set {
+    name  = "loki.limits_config.retention_period"
+    value = var.loki_retention
+  }
+  set {
+    name  = "singleBinary.replicas"
+    value = "1"
+  }
+  set {
+    name  = "singleBinary.persistence.storageClass"
+    value = "managed-premium"
+  }
+  set {
+    name  = "singleBinary.persistence.size"
+    value = var.loki_storage
+  }
+  set {
+    name  = "singleBinary.resources.requests.cpu"
+    value = "50m"
+  }
+  set {
+    name  = "singleBinary.resources.requests.memory"
+    value = "128Mi"
+  }
+  set {
+    name  = "singleBinary.resources.limits.memory"
+    value = "256Mi"
+  }
   # Disable microservice components in single-binary mode
-  set { name = "read.replicas"
-  value = "0" }
-  set { name = "write.replicas"
-  value = "0" }
-  set { name = "backend.replicas"
-  value = "0" }
+  set {
+    name  = "read.replicas"
+    value = "0"
+  }
+  set {
+    name  = "write.replicas"
+    value = "0"
+  }
+  set {
+    name  = "backend.replicas"
+    value = "0"
+  }
 
   depends_on = [helm_release.kube_prometheus]
 }
@@ -225,14 +293,22 @@ resource "helm_release" "promtail" {
   timeout    = 300
   wait       = true
 
-  set { name = "config.clients[0].url"
-  value = "http://loki-gateway/loki/api/v1/push" }
-  set { name = "resources.requests.cpu"
-  value = "25m" }
-  set { name = "resources.requests.memory"
-  value = "64Mi" }
-  set { name = "resources.limits.memory"
-  value = "128Mi" }
+  set {
+    name  = "config.clients[0].url"
+    value = "http://loki-gateway/loki/api/v1/push"
+  }
+  set {
+    name  = "resources.requests.cpu"
+    value = "25m"
+  }
+  set {
+    name  = "resources.requests.memory"
+    value = "64Mi"
+  }
+  set {
+    name  = "resources.limits.memory"
+    value = "128Mi"
+  }
 
   depends_on = [helm_release.loki]
 }
