@@ -39,7 +39,7 @@ variable "aks_subnet_prefix" {
 
 variable "kubernetes_version" {
   type    = string
-  default = "1.30.0"
+  default = "1.32.0"
 }
 
 variable "aks_node_vm_size" {
