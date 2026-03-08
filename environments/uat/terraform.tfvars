@@ -37,3 +37,7 @@ grafana_service_type = "LoadBalancer"
 # Loki log aggregation
 loki_retention = "720h" # 30 days for UAT
 loki_storage   = "10Gi"
+
+# AKS version & DB location fixes
+kubernetes_version = "1.32.0"
+db_location        = "centralus"

@@ -37,3 +37,7 @@ grafana_service_type = "ClusterIP" # Use ingress in prod
 # Loki log aggregation
 loki_retention = "2160h" # 90 days for prod
 loki_storage   = "20Gi"
+
+# AKS version & DB location fixes
+kubernetes_version = "1.32.0"
+db_location        = "centralus"

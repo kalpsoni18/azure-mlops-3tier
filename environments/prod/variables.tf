@@ -131,3 +131,9 @@ variable "loki_storage" {
   type    = string
   default = "5Gi"
 }
+
+variable "db_location" {
+  description = "Location for PostgreSQL (use centralus to avoid region restrictions)"
+  type        = string
+  default     = "centralus"
+}
