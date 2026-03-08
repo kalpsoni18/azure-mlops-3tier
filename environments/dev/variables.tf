@@ -39,12 +39,12 @@ variable "aks_subnet_prefix" {
 
 variable "kubernetes_version" {
   type    = string
-  default = "1.30.0"
+  default = "1.32.11"
 }
 
 variable "aks_node_vm_size" {
   type    = string
-  default = "Standard_B2s"
+  default = "Standard_DC2s_v3"
 }
 
 variable "aks_node_min" {
@@ -131,3 +131,10 @@ variable "loki_storage" {
   type    = string
   default = "5Gi"
 }
+
+variable "db_location" {
+  description = "Location for PostgreSQL Flexible Server"
+  type        = string
+  default     = "centralus"
+}
+

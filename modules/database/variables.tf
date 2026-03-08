@@ -27,11 +27,13 @@ variable "tags" {
 }
 
 variable "database_subnet_id" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "private_dns_zone_id" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "admin_username" {

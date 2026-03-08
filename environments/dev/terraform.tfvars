@@ -4,7 +4,8 @@
 # =============================================================================
 
 environment = "dev"
-location    = "eastus"
+location    = "westus2"
+db_location = "northcentralus"
 
 # Networking (10.1.x.x)
 vnet_address_space     = "10.1.0.0/16"
@@ -14,7 +15,7 @@ database_subnet_prefix = "10.1.3.0/24"
 aks_subnet_prefix      = "10.1.4.0/22"
 
 # AKS — 1 small node
-aks_node_vm_size = "Standard_B2s"
+aks_node_vm_size = "Standard_DC2s_v3"
 aks_node_min     = 1
 aks_node_max     = 2
 
@@ -29,7 +30,7 @@ db_geo_backup  = false
 
 # Monitoring — short retention, small PVs
 log_retention_days   = 7
-enable_prometheus    = true
+enable_prometheus    = false
 prometheus_retention = "3d"
 prometheus_storage   = "5Gi"
 grafana_service_type = "LoadBalancer"
